@@ -351,3 +351,137 @@ Value nvarchar(20)
 )
 insert into Test1 values ('x')
 select *from Test1
+
+--Tund 5 (04.03.2026)--
+
+--kustutame veeru nimega City Employees tabelis
+alter table Employees
+drop column City
+-------------------
+--inner join--
+
+--kuvab neid, kellel on Department all olemas väärtus
+--mitte kattuva read eemaldatakse tulemusest
+--ja sellepärast ei näidata Jamesi ja Rasselit tabelis
+--kuna neil on DepartmentId NULL
+select Name, Gender, Salary, DepartmentName
+from Employees
+inner join Department
+on Employees.DepartmentId = Department.Id
+--  INNER JOIN on SQL-is kõige levinum andmete ühendamise viis,
+--mis tagastab kirjed ainult siis, kui vastavus
+--(kattuv väärtus) eksisteerib mõlemas tabelis
+------------
+--left join
+select Name, Gender, Salary, DepartmentName
+from Employees
+left join Department  --võib kasutada ka left outer join-i
+on Employees.DepartmentId = Department.Id
+--uurige, mis on -left join-
+-- LEFT JOIN on SQL-i päringu tüüp, mis tagastab kõik
+--read vasakpoolsest (esimesest) tabelist
+--ja vastavad read parempoolsest (teisest) tabelist,
+--siis kui seal puudub võõrvõtme reas väärtus
+-----------
+--right join
+select Name, Gender, Salary, DepartmentName
+from Employees
+right join Department
+on Employees.DepartmentId = Department.Id
+--right jion näitab paremas(Department) tabelis olevaid väärtuseid,
+--mis ei ühti vasaku(Employees) tabeliga
+-----------
+--outer join
+select Name, Gender, Salary, DepartmentName
+from Employees
+full outer join Department
+on Employees.DepartmentId = Department.Id
+--mõlema tabeli read kuvab
+
+--teha cross join
+select Name, Gender, Salary, DepartmentName
+from Employees
+cross join Department
+--korrutab kõik omavahel läbi
+
+--teha left join, kus Employees tabilist Department on null
+select Name, Gender, Salary, DepartmentName
+from Employees
+left join Department
+on Employees.DepartmentId = Department.Id
+where Employees.DepartmentId is NULL
+--teine variant
+select Name, Gender, Salary, DepartmentName
+from Employees
+left join Department
+on Employees.DepartmentId = Department.Id
+where Department.Id is NULL
+--näitab ainult neid, kellel on vasakus tabelis (Employees)
+--DepartmentId null
+
+
+select Name, Gender, Salary, DepartmentName
+from Employees
+right join Department
+on Employees.DepartmentId = Department.Id
+where Employees.DepartmentId is NULL
+--näitab ainult paremas tabelis olevar rida,
+--mis ei kattu Employees-ga
+
+--full join
+--mõlema tabeli mitte-kattuvate väärtustega read kuvab välja
+select Name, Gender, Salary, DepartmentName
+from Employees
+full join Department
+on Employees.DepartmentId = Department.Id
+where Employees.DepartmentId is null
+or Department.Id is null
+
+--teete AdventureWorksLT2019 andmebaasile join päringuid:
+--inner join, left join, right join, cross join, full join
+--tabeleid sellesse andmebaasi juurde ei tohi teha
+
+--inner join--
+select p.Name AS ProductName, pc.Name AS CategoryName
+from SalesLT.Product p
+inner join SalesLT.ProductCategory pc
+on p.ProductCategoryID = pc.ProductCategoryID
+
+--left join--
+select p.Name as ProductName, pc.Name as CategoryName
+from SalesLT.Product p
+left join SalesLT.ProductCategory pc
+on p.ProductCategoryID = pc.ProductCategoryID
+
+--right join--
+select p.Name as ProductName, pc.Name as CategoryName
+from SalesLT.Product p
+right join SalesLT.ProductCategory pc
+on p.ProductCategoryID = pc.ProductCategoryID
+
+--full join--
+select p.Name as ProductName, pc.Name as CategoryName
+from SalesLT.Product p
+full join SalesLT.ProductCategory pc
+on p.ProductCategoryID = pc.ProductCategoryID
+
+--cross join--
+select p.Name as ProductName, pc.Name as CategoryName
+from SalesLT.Product p
+cross join SalesLT.ProductCategory pc
+
+--inner join--
+select PRODUCT.Name as [Product Name], ProductNumber, Listprice,
+ProductModel.Name as [Product Model Name],
+Product.ProductModelId,
+ProductModel.ProductModelID
+--mõnikord peab ka tabeli ette kirjutama  täpsustama info
+--nagu on SalesLT.Product
+from SalesLT.Product
+inner join SalesLT.ProductModel
+--antud juhul Producti tabelis ProductMOdelId võõrvõti,
+--mis ProductModeli tabelis on primaarvõti
+on Product.ProductModelID = ProductModel.ProductModelId
+--mõnikord pesb muutuja ette kirjutama tabeli nimetuse nagu on product.Name
+--et editor saaks aru, et kumma tabeli muutujat soovitakse ja ei tekiks
+--segadust
