@@ -727,3 +727,266 @@ if (@TotalCount = 0)
 else
     print '@Total count is not null'
 print @TotalCount
+
+-näitab ära, mitu rida vastab nõuetele
+
+--deklareerime muutuja @TotalCount, mis on int andmetüüp
+declare @TotalCount int
+--käivitame stored procedure spGetEmployeesCountByGender, kus on parameetrid
+--@EmployeeCount = @TotalCount out ja @Gender
+execute spGetEmployeesCountByGender @EmployeeCount = @TotalCount out, @Gender = 'Female'
+--prindib konsooli välja, kui TotalCount on null või mitte null
+print @TotalCount
+
+--sp sisu vaatamine
+sp_help spGetEmployeesCountByGender
+--tabeli info vaatamine
+sp_help Employees
+--kui soovid sp teksti näha
+sp_helptext spGetEmployeesCountByGender
+
+--vaatame, millest sõltub meie valitud sp
+sp_depends spGetEmployeesCountByGender
+--näitab, et sp sõltub Employees tabelist, kuna seal on count(Id)
+--ja Id on Employees tabelis
+
+--vaatame tabelit
+sp_depends Employees
+
+--teeme sp, mis annab andmeid Id ja Name veergude kohta Employees tabelis
+create proc spGetNameById
+@Id int,
+@Name nvarchar(20) output
+as begin
+select @Id = Id, @Name = FirstName from Employees
+end
+
+--annab kogu tabeli ridade arvu
+create proc spTotalCount2
+@TotalCount int output
+as begin
+select @TotalCount = count(Id) from Employees
+end
+
+--on vaja teha uus  päring, kus kasutame spTotalCount2 sp-d,
+--et saada tabeli ridade arv
+
+--tuleb deklareedida muutuja @TotalCount, mis on int andmetüüp
+declare @TotalEmployees int
+--tuleb execute spTotalCount2, kus on parameeter @TotalCount = @TotalCount out
+exec spTotalCount2 @TotalEmployees out
+select @TotalEmployees
+
+--mis Id all on keegi nime järgi
+create proc spGetNameById1
+@Id int,
+@FirstName nvarchar(20) output
+as begin
+select @FirstName =FirstName from Employees where Id = @Id
+end
+--annab tulemuse, kus id 1(seda numbrit saab muuta) real on keegi
+--printi tuleb kasutada, et näidata tulemust
+declare @FirstName nvarchar(20)
+execute spGetNameById1 3, @FirstName output
+print 'Name of the employee = ' + @FirstName
+
+--tehke sama, mis eelmine aga kasutage spGetNameById sp-d
+--FirstName lõpus on out
+declare @FirstName nvarchar(20)
+execute spGetNameById1 3, @FirstName out
+print 'Name = ' + @FirstName
+
+--output tagastab muudetud read kohe päringu tulemusena
+--see on salvestatud protseduuris ja ühe väärtuse tagastamine
+--out ei anna mitte midagi, kui seda ei määra execute käsus
+
+          --Tund nr 8  19.03.2026--
+------------------------------------------------
+
+sp_help spGetNameById
+
+create proc spGetNameById2
+@Id int
+--kui on begim, siis on ka end kuskil olemas
+as begin
+	return (select FirstName from Employees where Id = @Id)
+end
+
+--
+--tuleb veateade kuna kutsusime välja int-i, aga Tom on nvarchar
+declare @EmployeeName nvarchar(50)
+execute @EmployeeName = spGetNameById2 1
+print 'Name of the employee = ' + @EmployeeName
+
+
+--sisseehitatud string funktsioonid
+--see konverteerib ASCII tähe väärtuse numbriks
+select ASCII ('A')
+
+select CHAR(65)
+
+--prindime kogu tähestiku välja
+declare @Start int
+set @Start = 97
+while @Start <= 122
+begin
+    select char(@Start)
+    set @Start = @Start + 1
+end
+--kasutate while, et näidata kogu tähestik ette
+
+--emaldame  tühjad kohad lulgudes
+select ltrim ('                    hello')
+select  ('                    hello')
+
+--tühikute eemaldamine veerust, mis on tabelis 
+select FirstName, MiddleName, LastName from Employees
+--eemaldage tühikud FirstName veerust ära
+select ltrim (FirstName) as FirstName, MiddleName, LastName from Employees
+
+--paremalt poolt tühjad stringid lõikab ära
+select RTRIM ('    hello     ')
+--keerab kooloni sees olevad andmed vastupidiseks
+--vastavalt lower-ga ja upper-ga saan muuta märkide suurus
+--reverse funktsioon pöörab kõik umber
+select REVERSE(UPPER(ltrim(FirstName))) as FirstName, MiddleName, lower(LastName),
+rtrim(LTRIM(FirstName)) + ' ' + MiddleName + ' ' + LastName as FullName
+from Employees
+
+--left, right, substring
+--vasakult poolt neil esimest tähte
+select LEFT ('ABCDEF', 4)
+--paremalt poolt kolm tähte
+select right ('ABCDEF', 4)
+
+--kuvab @-tähtemärgi asetust e mitmes on @-märk
+select CHARINDEX('@', 'sara@aaa.com')
+
+--esimene nr peale komakohta näitab, et mitmendast alustab ja 
+--siis mitu nr peale seda kuvada
+select SUBSTRING ('pam@bbb.com', 5, 2)
+
+--@-märgist kuvab kolm tähemärki. viimase nr saab määrata pikkust
+select SUBSTRING('pam@bbb.com', CHARINDEX('@', 'pam@bbb.com') + 1, 3)
+
+--peale @-märki hakkkab kuvama tulemus, nr saab kaugust seadistada
+select SUBSTRING('pam@bbb.com', CHARINDEX('@', 'pam@bbb.com') + 2,
+LEN('pam@bbb.com') - charindex('@', 'pamm@bbb.com'))
+
+alter table Employees
+add Email nvarchar(20)
+
+select * from Employees
+update Employees set Email = 'tom@aaa.com' where Id = 1
+update Employees set Email = 'pam@bbb.com' where Id = 2
+update Employees set Email = 'john@aaa.com' where Id = 3
+update Employees set Email = 'sam@bbb.com' where Id = 4
+update Employees set Email = 'todd@bbb.com' where Id = 5
+update Employees set Email = 'ben@ccc.com' where Id = 6
+update Employees set Email = 'sara@ccc.com' where Id = 7
+update Employees set Email = 'valarie@aaa.com' where Id = 8
+update Employees set Email = 'james@bbb.com' where Id = 9
+update Employees set Email = 'russell@bbb.com' where Id = 10
+
+--soovime teada saada domeeninimesid emailides
+select SUBSTRING (Email, CHARINDEX ('@', Email)+1,
+len(Email) - charindex('@', Email)) as EmailDomain
+from Employees
+
+--alates teisest tähest emilis kuni @ märgini on tärnid
+select FirstName, LastName, 
+	substring(Email, 1, 2) +replicate('*', 5) +
+	substring(Email, charindex('@', Email),
+	len(Email)- charindex('@', Email) + 1) as Email
+from Employees	
+
+--kolm korda näitab strings olevat väärtus
+select REPLICATE ('asd', 3)
+
+--tühiku sissestamine
+select SPACE (5)
+
+--tühiku sissestamine FirstName ja LastName vahele
+select FirstName + SPACE(25) + LastName as FullName 
+from Employees
+
+--PATINDEX
+--saama, mis charindex, aga dünaamilissem ja saab 
+--kasutada wildcardi
+select Email, PATINDEX('%@aaa.com', Email) as Firstoccurence
+from Employees
+where PATINDEX('%@aaa.com', Email) > 0
+--leian kõik selle domeeni esinejad ja alates mitmendast märgist algab @
+
+--kõik .com emailid asendab .net-ga
+select Email, REPLACE(Email, '.com', '.net') as ConvertedEmail
+from Employees
+
+--soovin asendada peale esimest märki kolm tähte viie tärniga
+select FirstName, LastName, Email,
+	stuff(Email, 2, 3, '*****') as StuffedEmail
+from Employees
+
+create table DateTime
+(
+	c_time time,
+	c_date date,
+	c_smalldatetime smalldatetime,
+	c_detetime datetime,
+	c_detetime2 datetime2,
+	c_datetimeoffset datetimeoffset
+)
+
+select * from DateTime
+
+--konkreetse masina kellaaeg
+select GETDATE(), 'GETDATE()'
+
+insert into DateTime
+values (GETDATE(), GETDATE(), GETDATE(),GETDATE(),GETDATE(),GETDATE())
+
+select * from DateTime
+
+update DateTime set c_datetimeoffset = '2026-03-19 14:26:02.9833333 +10:00'
+where c_datetimeoffset = '2026-03-19 14:26:02.9833333 +00:00'
+
+select CURRENT_TIMESTAMP, 'CURRENT_TIMESTAMP' -- aja päring
+select SYSDATETIME(), 'SYSDATETIME'  --veel täpsena aja päring
+select SYSDATETIMEOFFSET(), 'SYSDATETIME'   --täpne aeg koos ajaliste nihkena
+select GETUTCDATE(), 'GETUTCDATE'   --UTC aeg
+
+--saab kontrolida, kas on õige andmetüüp
+select ISDATE('asd') --tagastab 0 kuna string ei ole date
+
+select ISDATE(GETDATE())--kuidas saada vastuseks 1 isdate puhul?
+select ISDATE ('2026-03-19 14:26:02.9833333') --tagastab 0 kuna max kolm komakohta võib olla
+select ISDATE ('2026-03-19 14:26:02.983') --tagaastab 1
+
+select DAY(GETDATE()) --annab tänase päeva nr
+select DAY('01/24/2026') --annab stringis oleva kp ja järjestus peab olema õige
+select MONTH(GETDATE()) --annab tänase kuu nr
+select MONTH('01/24/2026')--annab stringis oleva kuu ja järjestus peab olema õige
+select year(GETDATE()) --annab tänase aasta nr
+select year('01/24/2026')--annab stringis oleva aasta ja järjestus peab olema õige
+
+select DATENAME(DAY, '2026-03-19 14:26:02.983') --annab stringis oleva päeva nr
+select DATENAME(Month, '2026-03-19 14:26:02.983') --annab stringis oleva kuu nr
+select DATENAME(WEEKDAY, '2026-03-19 14:26:02.983') --annab stringis oleva nädala nr
+
+create table EmployeeWithDates
+(
+	Id nvarchar(2),
+	Name nvarchar(20),
+	DateOfBirth datetime
+)
+
+insert into EmployeeWithDates (Id, Name,DateOfBirth)
+values (1, 'Sam', '1999-01-10 15:56:02.983');
+insert into EmployeeWithDates (Id, Name,DateOfBirth)
+values (2, 'Ken', '2000-02-21 10:16:02.983');
+insert into EmployeeWithDates (Id, Name,DateOfBirth)
+values (3, 'Andrew', '2010-01-26 02:26:02.983');
+insert into EmployeeWithDates (Id, Name,DateOfBirth)
+values (4, 'Katy', '2007-08-20 09:35:02.983')
+
+select * from EmployeeWithDates
