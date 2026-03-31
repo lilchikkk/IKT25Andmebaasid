@@ -990,3 +990,171 @@ insert into EmployeeWithDates (Id, Name,DateOfBirth)
 values (4, 'Katy', '2007-08-20 09:35:02.983')
 
 select * from EmployeeWithDates
+
+ --Tund nr 9  24.03.2026--
+------------------------------------------------
+
+--kuidas võtta ühest veerust andmeid ja selle abil luua uued veerud
+
+--vaatab DoB veerust päeva ja kuvab päeva nimetuse sõnana
+select Name, DateOfBirth, Datename(weekday, DateOfBirth) as [Day],
+ --vaatab VoB veerust kuupäevasi ja kuvab kuu nr
+ Month(DateOfBirth) as MonthNumber,
+ --vaatab DoB veerust kuud ja kuvab sõnana
+ DateName(Month, DateOfBirth) as [MonthName],
+ --võtab DoB veerust aasta
+ Year(DateOfBirth) as [Year]
+ from EmployeeWithDates
+
+ --kuvab 3 kuna USA nädal algab pühapäevaga
+ select Datepart(weekday, '2026-03-24 09:35:02.983')
+ --tehke sama aga, kasutame kuu-d
+ select Datepart(month, '2026-03-24 09:35:02.983')
+ --liidab stringis oleva kp 20 päeva juurde
+ select Dateadd(day, 20, '2026-03-24 09:35:02.983')
+ --lahutab 20 päeva maha
+ select Dateadd(day, -20, '2026-03-24 09:35:02.983')
+ --kuvab kahe stringis oleva kuudevahelist aega nr-na
+ select datediff(month, '11/20/2026', '01/20/2024')
+ --tehke sama, aga kasutage aastat
+ select datediff(year, '11/20/2026', '01/20/2028')
+
+ --alguse uurigte, mis on funktsioon MS SQL
+ --eelkirjutatud toimingud,salvestatud tegevus,andmebaasis salvestatud alamprogramm.
+
+ --miks seda on vaja
+ --pakkuda DB-s korduvkasutatud funktsionaalsus, korduvate arvutuste lihtsustamiseks.
+ 
+ --mis on selle eelised ja puudused
+--saada kiiresti kasutada toiminguid ja ei pea uuesti koodi kirjutama
+--Funktsioonid ei tohi muuta andmebaasi olekut
+
+create function fnComputeAge(@DOB datetime)
+returns nvarchar(50)
+as begin
+    declare @tempdate datetime, @years int, @months int, @days int
+    select @tempdate = @DOB
+
+    select @years = datediff(year, @tempdate, getdate()) - case when (month(@DOB) >
+    month(getdate())) or (month(@DOB) = month(getdate()) and day (@DOB) > day(getdate()))
+    then 1 else 0 end
+    select @tempdate = dateadd(year, @Years, @tempdate)
+
+select @months  = datediff(month, @tempdate, getdate()) - case when day(@DOB) > day(getdate())
+then 1 else 0 end
+select @tempdate = dateadd(month, @months, @tempdate)
+
+select @days = datediff(day, @tempdate, getdate())
+
+declare @Age nvarchar(50)
+      set @Age = cast(@years as nvarchar(4)) + ' Years ' + cast(@months as nvarchar(2))
+      + ' Months ' + cast(@days as nvarchar(2)) + ' Days old '
+  return @Age
+end
+create function fnComputeAge(@DOB datetime)
+returns nvarchar(50)
+as begin
+    declare @tempdate datetime, @years int, @months int, @days int
+select @tempdate = @DOB
+
+select @years = DATEDIFF(YEAR, @tempdate, GETDATE()) - case when (month(@DOB)>
+MONTH(GETDATE())) or (MONTH(@DOB) = MONTH(GETDATE())and day(@DOB) > DAY(GETDATE()))
+then 1 else 0 end
+select @tempdate = DATEADD(YEAR, @years, @tempdate)
+
+select @months = DATEDIFF(MONTH, @tempdate, GETDATE()) - case when DAY(@DOB) >
+DAY(getdate()) then 1 else 0 end
+select @tempdate = DATEADD(MONTH, @months, @tempdate)
+
+select @days = datediff(day, @tempdate, GETDATE())
+
+declare @Age nvarchar(50)
+   set @Age = CAST (@years as nvarchar(4)) + 'Years' + CAST(@months as nvarchar(2))
++ 'Months' + CAST (@days as nvarchar(2)) + 'Days old'
+    return @Age
+end
+
+select Id, Name, DateOfBirth, dbo.fnComputeAge(DateOfBirth)
+as Age from EmployeeWithDates
+          --Tund nr 10  31.03.2026--
+------------------------------------------------
+--kui kasutame seda funktsiooni, siis same tänase päeva vahet stringis välja tooduga
+select dbo.fnComputeAge('02/24/2010') as Age
+
+--na peale DOB muutujat, et mismoodi kuvada DOB-d
+select Id, Name, DateOfBirth,
+CONVERT (nvarchar, DateOfBirth, 126) as ConvertedDOB
+from EmployeeWithDates
+
+select Id, Name, Name + ' - ' + CAST(Id as nvarchar) as
+[Name-Id] from EmployeeWithDates
+
+select CAST(GETDATE() as date) -- tänane kp
+--tänane kp, aga kasutage convert-i, et kuvada stringina
+select convert(nvarchar,
+cast(getdate() as date), 126) as TänaneKuupäev
+
+--matemaatilised funktsioonid
+select ABS (-5) -- ABS on absoluutväärtusega number ja tulemuseks
+--saame ilma miinus närgiga 5
+select CEILING(4.2) --ceiling on funktsioon, mis ümardab ülespoole ja tulemuseks saame 5
+select CEILING(-4.2) --ceiling on funktsioon, mis ümardab ülespoole ja tulemuseks saame 4
+select floor(15.2) --floor on funktsioon, mis ümbritseb alla ja tulemuseks saame 15
+select floor(-15.2)--floor ümmardab ka miinus numbri alla, mis tähendab, et saame -16
+select power(2, 4) --kaks astems neli
+select square(9) --antud juhul üheksa ruudus
+select sqrt(16) --antud juhul 16 ruutjuur
+
+select RAND() -- rand on funktsioon, mis genereerib
+--juhuliku numbri vahemikus 0 kuni 1
+--kuidas sada täisnumber iga kord?
+select floor(RAND() * 100)
+
+--iga kord näitab 10 suvalist numbrit
+declare @counter int
+set @counter = 1
+while (@counter <= 10)
+begin
+    print floor(rand() * 100)
+    set @counter = @counter + 1
+end
+
+select ROUND(850.556, 2)
+--round on fnktsioon, mis ümardab kaks komakohta 
+--ja tulemuseks same 850.56
+select ROUND (850.556, 2, 1)
+--round on funktsioon , mis ümardab kaks komakohta ja 
+--kui kolmas parameeter on 1, siis ümmardab alla
+select ROUND(850.556, 1) 
+--round on funktsioon , mis ümardab ühe komakohta ja 
+--ja tulemuseks same 850.6
+select ROUND(850.556, 1, 1 )
+--round on funktsioon , mis ümardab ühe komakohta ja 
+--pealt tulemuseks saame 850.5
+select ROUND(850.556, -2) --ümardab täisnumber ülessepoole
+--ja tulemuseks saame 900
+select ROUND(850.556, -1)--ümardab täisnumber alla
+--ja tulemuseks saame 850
+
+--
+create  function dbo.CalculateAge(@DOB date)
+returns int
+as begin 
+declare @Age int
+
+	set @Age = DATEDIFF(year, @DOB, GETDATE()) 
+	- case
+		when (MONTH(@DOB) > MONTH(GETDATE())) or
+		(MONTH(@DOB) = MONTH(GETDATE()) and DAY(@DOB) > DAY(GETDATE()))
+		then 1 else 0 end 
+	return @Age
+end
+
+--kui valmis proovige ja vaadake, kas annab õige vanuse
+exec dbo.CalculateAge '1990-05-15'
+SELECT dbo.CalculateAge('1990-05-15') AS Vanus
+
+--arvutab välja, kui vana on isik ja võtab arvesse kuud ning pävad
+--antud juhul näitab kõike, kes on üle 36 a vanad
+select Id, Name, dbo.CalculateAge(DateOfBirth) as Age from EmployeeWithDates
+where dbo.CalculateAge(DateOfBirth) < 36
