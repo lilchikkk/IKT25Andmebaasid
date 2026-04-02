@@ -1158,3 +1158,106 @@ SELECT dbo.CalculateAge('1990-05-15') AS Vanus
 --antud juhul näitab kõike, kes on üle 36 a vanad
 select Id, Name, dbo.CalculateAge(DateOfBirth) as Age from EmployeeWithDates
 where dbo.CalculateAge(DateOfBirth) < 36
+
+	---Tund nr 11  02.04.2026---
+------------------------------------
+
+---inline table valued functions---
+alter table EmployeeWithDates
+add DepartmentId int
+alter table EmployeeWithDates
+add Gender nvarchar(10)
+
+select * from EmployeeWithDates
+-- DepartmentId
+UPDATE EmployeeWithDates SET DepartmentId = 1 WHERE Id = 1;
+UPDATE EmployeeWithDates SET DepartmentId = 2 WHERE Id = 2;
+UPDATE EmployeeWithDates SET DepartmentId = 1 WHERE Id = 3;
+UPDATE EmployeeWithDates SET DepartmentId = 3 WHERE Id = 4;
+
+-- Gender
+UPDATE EmployeeWithDates SET Gender = 'Male'   WHERE Id = 1;
+UPDATE EmployeeWithDates SET Gender = 'Female' WHERE Id = 2;
+UPDATE EmployeeWithDates SET Gender = 'Male'   WHERE Id = 3;
+UPDATE EmployeeWithDates SET Gender = 'Female' WHERE Id = 4;
+
+--kutsuta nullid
+SELECT * FROM EmployeeWithDates
+WHERE Id IS NULL;
+
+DELETE FROM EmployeeWithDates
+WHERE Id IS NULL;
+
+SELECT * FROM EmployeeWithDates;
+
+insert into EmployeeWithDates (Id, Name, DateOfBirth,DepartmentId, Gender)
+values (5, 'Todd', '2000-03-24 09:35:02.983', 1, 'Male')
+
+--scalar function annab mingis vahemikus olevaid andmeid,
+--inline table values ei kasuta begin ja end funktsioone
+--scalar annab väärtused ja inline annab tabeli
+create function fn_EmployeesByGender(@Gender nvarchar(10))
+returns table 
+as
+return (select Id, Name, DateOfBirth, DepartmentId, Gender
+				from EmployeeWithDates
+				where Gender = @Gender)
+--kuidas leida kõik naised tabelis EmployeeWithDates
+--ja kasutada funktsiooni fn_EmployeesByGender
+select * from fn_EmployeesByGender('Female')
+
+--tahaks ainult Pami nime näha
+select * from fn_EmployeesByGender('Female') where Name = 'Pam';
+
+select *from Department
+
+--kahest erinevast tabelist andmete võtmine ja 
+--koos kuuvamiine 
+--esimene on funktsioon ja teine tabel
+select Name, Gender, DepartmentName
+from fn_EmployeesByGender('Male') E
+join Department D on D.Id = E.DepartmentId
+
+--multi tabel statment
+--inline funktsioon 
+create function fn_GetEmployees()
+returns table as
+return (select Id, Name, CAST(DateOfBirth as date)
+		as DOB
+		from EmployeeWithDates)
+
+select * from fn_GetEmployees()
+
+--multi state puhul peab defineerima uue tabeli veerud koos muutujatega
+--funktsiooni nimi on fn_MS_GetEmployees()
+--peab edastama meile, Id, Name, DOB tabelist EmployeeWithDates
+create function fn_MS_GetEmployees()
+returns @Table Table(Id int ,Name nvarchar(20), DOB date)
+as begin
+	insert into @Table
+	select Id, Name, CAST (DateOfBirth as date)
+	from EmployeeWithDates
+return
+end
+
+select * from fn_MS_GetEmployees()
+
+--inline tabeli funktsioonid on paremini töötmas kuna käsiletakse vaatrna
+--multi puhul on pm tegemist stored proceduriga ja kulutab ressursi rohkem
+
+--muudame andmeid ja vaatame , kas inline funktsioonis on muutused kajastatud
+update fn_GetEmployees() set Name = 'Sam1' where Id = 1
+select *from fn_GetEmployees() -- saab muuta andmeid
+
+update fn_MS_GetEmployees() set Name = 'Sam2' where Id = 1
+--ei saa muuta andmeid multi state funktsioonis,
+--kuna see on nagu stored procedure
+
+--deterministic vs non-deterministic functions
+--deterministic funktsioonid annavad erineva tulemuse, kui sissend on sama
+select COUNT(*) from EmployeeWithDates
+select SQUARE(4)
+--non-deterministic funktsioonid annavad erineva tulemuse, kui sisend on sama
+select GETDATE()
+select CURRENT_TIMESTAMP
+select RAND()
