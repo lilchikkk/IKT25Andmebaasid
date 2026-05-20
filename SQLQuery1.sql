@@ -2520,8 +2520,134 @@ VALUES
 create table ProductSales
 (
 	Id int primary key identity,
-	Product int foreign key references Product(Id),
+	ProductId int foreign key references Product(Id),
 	UnitPrice int,
-	QuntitySold int
+	QuantitySold int
 )
 
+
+-------------- Tund 16 - 20.05.2026 ----------------
+----------------------------------------------------
+
+insert into ProductSales values (3, 450, 5)
+insert into ProductSales values (2, 250, 7)
+insert into ProductSales values (3, 450, 4)
+insert into ProductSales values (3, 450, 9)
+
+
+select * from Product
+select * from ProductSales
+
+--kirjutame päringu, mis annab infot müümata toodetest
+select Id, Name, Description
+from Product
+where Id not in (select ProductId from ProductSales)
+
+--sulgude sees on squery, mis tagastab asendada join-iga
+--teha päring join-iga , et saada müümata toodete infot (left join)
+select p.Id, p.Name, p.Description
+from Product p
+left join ProductSales ps on p.Id = ps.ProductId
+where ps.ProductId is null
+
+
+--teeme subquery kus kasutatakse selecti
+select Name,
+(select SUM (QuantitySold) from ProductSales where ProductId = Product.Id) as
+[Total Quantity]
+from Product
+order by Name
+
+-- sama tulemus, aga join-iga
+select p.Name,
+SUM (QuantitySold) as [Total Quantity]
+from Product p
+left join ProductSales ps on p.Id = ps.ProductId
+group by p.Name
+order by p.Name
+
+--subqueryt saab subquery sisse panna
+--subquery on alati sulgudes ja neid nimetatase sissemisteks päringiteks
+
+
+-----ronkete andmetega testimise table----
+------------------------------------------
+
+truncate table Product
+truncate table ProductSales
+
+select * from Product
+select * from ProductSales
+
+--sisestame näidisandmed Product tabelisse
+declare @Id int;
+set @Id = 1;
+
+declare @RandomProductId int;
+declare @RandomUnitPrice int;
+declare @RandomQuantitySold int;
+
+-- productId piirangud
+declare @LowerLimitForProductId int;
+declare @UpperLimitForProductId int;
+set @LowerLimitForProductId = 1;
+set @UpperLimitForProductId = 100000;
+
+-- Unit Price piirangud
+declare @LowerLimitForUnitPrice int;
+declare @UpperLimitForUnitPrice int;
+set @LowerLimitForUnitPrice = 1;
+set @UpperLimitForUnitPrice = 100;
+
+-- Quantity Sold piirangud
+declare @LowerLimitForQuantitySold int;
+declare @UpperLimitForQuantitySold int;
+set @LowerLimitForQuantitySold = 1;
+set @UpperLimitForQuantitySold = 10;
+
+declare @Counter int;
+set @Counter = 1;
+
+
+-- 2. ESIMENE TSÜKKEL (Tooted)
+while(@Id <= 3000000)
+begin 
+    insert into Product
+    values (
+        'Product - ' + cast(@Id as nvarchar(20)),
+        'Description for product' + cast(@Id as nvarchar(20))
+    ); -- SULG JA SEMIKOOLON LISATUD (Vea parandus)
+
+    set @Id = @Id + 1;
+end;
+
+
+-- 3. TEINE TSÜKKEL (Müügid)
+while(@Counter <= 4500000)
+begin
+    set @RandomProductId = round(((@UpperLimitForProductId - @LowerLimitForProductId) * rand() + @LowerLimitForProductId), 0);
+    set @RandomUnitPrice = round(((@UpperLimitForUnitPrice - @LowerLimitForUnitPrice) * rand() + @LowerLimitForUnitPrice), 0);
+    set @RandomQuantitySold = round(((@UpperLimitForQuantitySold - @LowerLimitForQuantitySold) * rand() + @LowerLimitForQuantitySold), 0);
+
+    insert into ProductSales
+    values(@RandomProductId, @RandomUnitPrice, @RandomQuantitySold);
+
+    set @Counter = @Counter + 1;
+end;
+------------------------------
+
+CREATE TABLE Product
+(
+    Id int PRIMARY KEY,
+    Name nvarchar(50),
+    Description nvarchar(250)
+);
+-------------------------------
+
+create table ProductSales
+(
+	Id int primary key identity,
+	ProductId int foreign key references Product(Id),
+	UnitPrice int,
+	QuantitySold int
+)
